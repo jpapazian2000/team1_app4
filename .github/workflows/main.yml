@@ -1,0 +1,107 @@
+name: authenticate to vault with custom claim
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyjwt jq
+
+      - name: Extract team name
+        id: extract_team
+        run: |
+          REPO_NAME=$(basename $GITHUB_REPOSITORY)
+          TEAM_NAME=$(echo $REPO_NAME | cut -d'-' -f1)
+          echo "team_name=$TEAM_NAME" >> $GITHUB_ENV
+          echo "Extracted TEAM_NAME: $TEAM_NAME"
+
+      - name: Verify team name
+        run: |
+          echo "Verifying team name..."
+          echo "TEAM_NAME: ${{ env.team_name }}"
+
+      - name: Request OIDC Token
+        id: oidc
+        run: |
+          echo "Requesting OIDC token..."
+          ID_TOKEN=$(curl -s -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" -H "Accept: application/json" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value')
+          echo "ID_TOKEN: $ID_TOKEN"
+          echo "::set-output name=token::$ID_TOKEN"
+          echo "JWT_TOKEN=$ID_TOKEN" >> $GITHUB_ENV
+
+      - name: Customize JWT Token
+        run: |
+          echo "import jwt" > customize_jwt.py
+          echo "import os" >> customize_jwt.py
+          echo "def customize_jwt_token(token, team_name):" >> customize_jwt.py
+          echo "    try:" >> customize_jwt.py
+          echo "        decoded = jwt.decode(token, options={'verify_signature': False})" >> customize_jwt.py
+          echo "        print(f'Decoded Token: {decoded}')" >> customize_jwt.py
+          echo "        decoded['team_name'] = team_name" >> customize_jwt.py
+          echo "        print(f'Updated Token with team_name: {decoded}')" >> customize_jwt.py
+          echo "        secret = 'your-256-bit-secret'" >> customize_jwt.py
+          echo "        customized_token = jwt.encode(decoded, secret, algorithm='HS256')" >> customize_jwt.py
+          echo "        return customized_token" >> customize_jwt.py
+          echo "    except Exception as e:" >> customize_jwt.py
+          echo "        print(f'Error customizing token: {e}')" >> customize_jwt.py
+          echo "        return None" >> customize_jwt.py
+          echo "" >> customize_jwt.py
+          echo "jwt_token = os.getenv('JWT_TOKEN')" >> customize_jwt.py
+          echo "team_name = os.getenv('TEAM_NAME')" >> customize_jwt.py
+          echo "print(f'Team Name: {team_name}')" >> customize_jwt.py
+          echo "customized_token = customize_jwt_token(jwt_token, team_name)" >> customize_jwt.py
+          echo "print(f'Customized JWT Token: {customized_token}')" >> customize_jwt.py
+          echo "with open(os.getenv('GITHUB_ENV'), 'a') as env_file:" >> customize_jwt.py
+          echo "    env_file.write(f'CUSTOMIZED_JWT_TOKEN={customized_token}\\n')" >> customize_jwt.py
+          python customize_jwt.py
+
+      - name: Decode Customized JWT Token
+        run: |
+          echo "import jwt" > decode_customized_jwt.py
+          echo "import os" >> decode_customized_jwt.py
+          echo "def decode_jwt_token(token):" >> decode_customized_jwt.py
+          echo "    try:" >> decode_customized_jwt.py
+          echo "        decoded = jwt.decode(token, options={'verify_signature': False})" >> decode_customized_jwt.py
+          echo "        return decoded" >> decode_customized_jwt.py
+          echo "    except Exception as e:" >> decode_customized_jwt.py
+          echo "        print(f'Error decoding token: {e}')" >> decode_customized_jwt.py
+          echo "        return None" >> decode_customized_jwt.py
+          echo "" >> decode_customized_jwt.py
+          echo "customized_token = os.getenv('CUSTOMIZED_JWT_TOKEN')" >> decode_customized_jwt.py
+          echo "decoded_token = decode_jwt_token(customized_token)" >> decode_customized_jwt.py
+          echo "with open('decoded_customized_jwt_token.txt', 'w') as f:" >> decode_customized_jwt.py
+          echo "    f.write(f'Decoded Customized JWT Token: {decoded_token}\\n')" >> decode_customized_jwt.py
+          echo "print(\"Decoded token has been written to 'decoded_customized_jwt_token.txt' for verification.\")"
+          python decode_customized_jwt.py
+      - name: Upload decoded customized JWT token
+        uses: actions/upload-artifact@v3
+        with:
+          name: decoded-customized-jwt-token
+          path: decoded_customized_jwt_token.txt
+
+      - name: Authenticate to Vault
+        uses: hashicorp/vault-action@v2
+        with:
+          url: https://vault.mycompany.com:8200
+          token: ${{ steps.customize_jwt.outputs.token }}
+          secrets: |
+            secret/data/ci/aws accessKey | AWS_ACCESS_KEY_ID ;
+            secret/data/ci/aws secretKey | AWS_SECRET_ACCESS_KEY ;
