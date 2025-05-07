@@ -67,7 +67,7 @@ jobs:
           python customize_jwt.py
 
       - name: Decode Customized JWT Token
-        run: | 
+        run: |
           echo "import jwt" > decode_customized_jwt.py
           echo "import os" >> decode_customized_jwt.py
           echo "def decode_jwt_token(token):" >> decode_customized_jwt.py
