@@ -81,7 +81,9 @@ jobs:
           echo "" >> decode_customized_jwt.py
           echo "customized_token = os.getenv('CUSTOMIZED_JWT_TOKEN')" >> decode_customized_jwt.py
           echo "decoded_token = decode_jwt_token(customized_token)" >> decode_customized_jwt.py
-          echo "print(f'Decoded Customized JWT Token: {decoded_token}')" >> decode_customized_jwt.py
+          echo "with open('decoded_customized_jwt_token.txt', 'w') as f:" >> decode_customized_jwt.py
+          echo "    f.write(f'Decoded Customized JWT Token: {decoded_token}\\n')" >> decode_customized_jwt.py
+          echo "print(\"Decoded token has been written to 'decoded_customized_jwt_token.txt' for verification.\")"
           python decode_customized_jwt.py
 
       - name: Authenticate to Vault
