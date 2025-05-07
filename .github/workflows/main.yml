@@ -96,7 +96,7 @@ jobs:
         with:
           name: decoded-customized-jwt-token
           path: decoded_customized_jwt_token.txt
-          
+
       - name: Authenticate to Vault
         uses: hashicorp/vault-action@v2
         with:
