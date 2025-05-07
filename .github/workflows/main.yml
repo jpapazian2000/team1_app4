@@ -47,35 +47,35 @@ jobs:
           echo "::set-output name=token::$ID_TOKEN"
           echo "JWT_TOKEN=$ID_TOKEN" >> $GITHUB_ENV
 
-     - name: Customize JWT Token
-       id: customize_jwt
-       run: |
-        python <<EOF
-        import jwt
-        import os
+      - name: Customize JWT Token
+        id: customize_jwt
+        run: |
+         python <<EOF
+         import jwt
+         import os
 
-        def customize_jwt_token(token, team_name):
-            try:
-                decoded = jwt.decode(token, options={"verify_signature": False})
-                print(f"Original Token: {decoded}")
-                decoded["team_name"] = team_name
-                print(f"Updated Token: {decoded}")
-                # Re-sign (for demo purposes only, since we’re not verifying this later)
-                secret = "temporary-secret"
-                customized_token = jwt.encode(decoded, secret, algorithm="HS256")
-                return customized_token
-            except Exception as e:
-                print(f"Error: {e}")
-                return ""
+         def customize_jwt_token(token, team_name):
+             try:
+                 decoded = jwt.decode(token, options={"verify_signature": False})
+                 print(f"Original Token: {decoded}")
+                 decoded["team_name"] = team_name
+                 print(f"Updated Token: {decoded}")
+                 # Re-sign (for demo purposes only, since we’re not verifying this later)
+                 secret = "temporary-secret"
+                 customized_token = jwt.encode(decoded, secret, algorithm="HS256")
+                 return customized_token
+             except Exception as e:
+                 print(f"Error: {e}")
+                 return ""
 
-        jwt_token = os.getenv("JWT_TOKEN")
-        team_name = os.getenv("TEAM_NAME")
-        customized_token = customize_jwt_token(jwt_token, team_name)
+         jwt_token = os.getenv("JWT_TOKEN")
+         team_name = os.getenv("TEAM_NAME")
+         customized_token = customize_jwt_token(jwt_token, team_name)
 
-        with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
-            print(f"customized_token={customized_token}")
-            fh.write(f"customized_token={customized_token}\n")
-        EOF
+         with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+             print(f"customized_token={customized_token}")
+             fh.write(f"customized_token={customized_token}\n")
+         EOF
 
       - name: Decode Customized JWT Token
         run: |
