@@ -91,6 +91,7 @@ jobs:
           echo "    f.write(f'Decoded Customized JWT Token: {decoded_token}\\n')" >> decode_customized_jwt.py
           echo "print(\"Decoded token has been written to 'decoded_customized_jwt_token.txt' for verification.\")"
           python decode_customized_jwt.py
+      
       - name: Upload decoded customized JWT token
         uses: actions/upload-artifact@v3
         with:
