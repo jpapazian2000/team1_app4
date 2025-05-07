@@ -92,10 +92,11 @@ jobs:
           echo "print(\"Decoded token has been written to 'decoded_customized_jwt_token.txt' for verification.\")"
           python decode_customized_jwt.py
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: decoded-customized-jwt-token
           path: decoded_customized_jwt_token.txt
+          
       - name: Authenticate to Vault
         uses: hashicorp/vault-action@v2
         with:
