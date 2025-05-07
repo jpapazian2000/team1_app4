@@ -47,31 +47,35 @@ jobs:
           echo "::set-output name=token::$ID_TOKEN"
           echo "JWT_TOKEN=$ID_TOKEN" >> $GITHUB_ENV
 
-      - name: Customize JWT Token
-        run: |
-          echo "import jwt" > customize_jwt.py
-          echo "import os" >> customize_jwt.py
-          echo "def customize_jwt_token(token, team_name):" >> customize_jwt.py
-          echo "    try:" >> customize_jwt.py
-          echo "        decoded = jwt.decode(token, options={'verify_signature': False})" >> customize_jwt.py
-          echo "        print(f'Decoded Token: {decoded}')" >> customize_jwt.py
-          echo "        decoded['team_name'] = team_name" >> customize_jwt.py
-          echo "        print(f'Updated Token with team_name: {decoded}')" >> customize_jwt.py
-          echo "        secret = 'your-256-bit-secret'" >> customize_jwt.py
-          echo "        customized_token = jwt.encode(decoded, secret, algorithm='HS256')" >> customize_jwt.py
-          echo "        return customized_token" >> customize_jwt.py
-          echo "    except Exception as e:" >> customize_jwt.py
-          echo "        print(f'Error customizing token: {e}')" >> customize_jwt.py
-          echo "        return None" >> customize_jwt.py
-          echo "" >> customize_jwt.py
-          echo "jwt_token = os.getenv('JWT_TOKEN')" >> customize_jwt.py
-          echo "team_name = os.getenv('TEAM_NAME')" >> customize_jwt.py
-          echo "print(f'Team Name: {team_name}')" >> customize_jwt.py
-          echo "customized_token = customize_jwt_token(jwt_token, team_name)" >> customize_jwt.py
-          echo "print(f'Customized JWT Token: {customized_token}')" >> customize_jwt.py
-          echo "with open(os.getenv('GITHUB_ENV'), 'a') as env_file:" >> customize_jwt.py
-          echo "    env_file.write(f'CUSTOMIZED_JWT_TOKEN={customized_token}\\n')" >> customize_jwt.py
-          python customize_jwt.py
+     - name: Customize JWT Token
+       id: customize_jwt
+       run: |
+        python <<EOF
+        import jwt
+        import os
+
+        def customize_jwt_token(token, team_name):
+            try:
+                decoded = jwt.decode(token, options={"verify_signature": False})
+                print(f"Original Token: {decoded}")
+                decoded["team_name"] = team_name
+                print(f"Updated Token: {decoded}")
+                # Re-sign (for demo purposes only, since we’re not verifying this later)
+                secret = "temporary-secret"
+                customized_token = jwt.encode(decoded, secret, algorithm="HS256")
+                return customized_token
+            except Exception as e:
+                print(f"Error: {e}")
+                return ""
+
+        jwt_token = os.getenv("JWT_TOKEN")
+        team_name = os.getenv("TEAM_NAME")
+        customized_token = customize_jwt_token(jwt_token, team_name)
+
+        with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+            print(f"customized_token={customized_token}")
+            fh.write(f"customized_token={customized_token}\n")
+        EOF
 
       - name: Decode Customized JWT Token
         run: |
