@@ -33,6 +33,11 @@ jobs:
           echo "team_name=$TEAM_NAME" >> $GITHUB_ENV
           echo "Extracted TEAM_NAME: $TEAM_NAME"
 
+      - name: Verify team name
+        run: |
+          echo "Verifying team name..."
+          echo "TEAM_NAME: ${{ env.team_name }}"
+
       - name: Request OIDC Token
         id: oidc
         run: |
@@ -61,6 +66,7 @@ jobs:
           echo "" >> customize_jwt.py
           echo "jwt_token = os.getenv('JWT_TOKEN')" >> customize_jwt.py
           echo "team_name = os.getenv('TEAM_NAME')" >> customize_jwt.py
+          echo "print(f'Team Name: {team_name}')" >> customize_jwt.py
           echo "customized_token = customize_jwt_token(jwt_token, team_name)" >> customize_jwt.py
           echo "print(f'Customized JWT Token: {customized_token}')" >> customize_jwt.py
           echo "with open(os.getenv('GITHUB_ENV'), 'a') as env_file:" >> customize_jwt.py
