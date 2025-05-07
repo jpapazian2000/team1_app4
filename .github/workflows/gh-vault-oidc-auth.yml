@@ -46,11 +46,12 @@ jobs:
         run: |
           echo "import jwt" > customize_jwt.py
           echo "import os" >> customize_jwt.py
-          echo "import json" >> customize_jwt.py
           echo "def customize_jwt_token(token, team_name):" >> customize_jwt.py
           echo "    try:" >> customize_jwt.py
           echo "        decoded = jwt.decode(token, options={'verify_signature': False})" >> customize_jwt.py
+          echo "        print(f'Decoded Token: {decoded}')" >> customize_jwt.py
           echo "        decoded['team_name'] = team_name" >> customize_jwt.py
+          echo "        print(f'Updated Token with team_name: {decoded}')" >> customize_jwt.py
           echo "        secret = 'your-256-bit-secret'" >> customize_jwt.py
           echo "        customized_token = jwt.encode(decoded, secret, algorithm='HS256')" >> customize_jwt.py
           echo "        return customized_token" >> customize_jwt.py
